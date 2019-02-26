@@ -22,12 +22,12 @@ COLOR_LIST = sorted([c for c in cmap.keys()])
 # Utility funcs
 #
 
-def filter_boxes(min_score, boxes, scores, classes):
+def filter_boxes(min_score, target_class, boxes, scores, classes):
     """Return boxes with a confidence >= `min_score`"""
     n = len(classes)
     idxs = []
     for i in range(n):
-        if scores[i] >= min_score:
+        if scores[i] >= min_score and classes[i] == target_class:
             idxs.append(i)
  
     filtered_boxes = boxes[idxs, ...]
@@ -119,15 +119,17 @@ class TLClassifier(object):
 
             confidence_cutoff = 0.2
             # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = filter_boxes(confidence_cutoff, boxes, scores, classes)
-            rospy.logwarn(classes)
-            # The current box coordinates are normalized to a range between 0 and 1.
-            # This converts the coordinates actual location on the image.
-            width, height = draw_img.size
-            box_coords = to_image_coords(boxes, height, width)
+            boxes, scores, classes = filter_boxes(confidence_cutoff, TARGET_CLASS, boxes, scores, classes)
 
-            # Each class with be represented by a differently colored box
-            draw_boxes(draw_img, box_coords, classes)
-            draw_img.save(OBJECT_DETECTED_IMAGE)
+            if len(boxes) > 0:
+                # The current box coordinates are normalized to a range between 0 and 1.
+                # This converts the coordinates actual location on the image.
+                width, height = draw_img.size
+                box_coords = to_image_coords(boxes, height, width)
+
+                # Each class with be represented by a differently colored box
+                draw_boxes(draw_img, box_coords, classes)
+
+                draw_img.save(OBJECT_DETECTED_IMAGE)
 
         return color
