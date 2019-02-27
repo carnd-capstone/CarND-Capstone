@@ -1,6 +1,7 @@
 from styx_msgs.msg import TrafficLight
 
 import rospy
+import cv2
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +10,8 @@ from PIL import ImageDraw
 from PIL import ImageColor
 
 SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+TARGET_CLASS = 10  ## traffic light 
+OBJECT_DETECTED_IMAGE = 'obj_det.png'
 
 # Colors (one for each class)
 cmap = ImageColor.colormap
@@ -98,4 +101,33 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        color = TrafficLight.UNKNOWN
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        draw_img = Image.fromarray(image)
+        image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
+
+        with tf.Session(graph=self.detection_graph) as sess:                
+            # Actual detection.
+            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
+                                                feed_dict={self.image_tensor: image_np})
+
+            # Remove unnecessary dimensions
+            boxes = np.squeeze(boxes)
+            scores = np.squeeze(scores)
+            classes = np.squeeze(classes)
+
+            confidence_cutoff = 0.2
+            # Filter boxes with a confidence score less than `confidence_cutoff`
+            boxes, scores, classes = filter_boxes(confidence_cutoff, boxes, scores, classes)
+            rospy.logwarn(classes)
+            # The current box coordinates are normalized to a range between 0 and 1.
+            # This converts the coordinates actual location on the image.
+            width, height = draw_img.size
+            box_coords = to_image_coords(boxes, height, width)
+
+            # Each class with be represented by a differently colored box
+            draw_boxes(draw_img, box_coords, classes)
+            draw_img.save(OBJECT_DETECTED_IMAGE)
+
+        return color
