@@ -49,7 +49,7 @@ def to_image_coords(boxes, height, width):
 
     return box_coords
 
-def draw_boxes(image, boxes, classes, thickness=4):
+def draw_boxes(image, boxes, classes, scores, thickness=4):
     """Draw bounding boxes on the image"""
     draw = ImageDraw.Draw(image)
     for i in range(len(boxes)):
@@ -57,6 +57,7 @@ def draw_boxes(image, boxes, classes, thickness=4):
         class_id = int(classes[i])
         color = COLOR_LIST[class_id]
         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
+        draw.text((left, bot-15), str(scores[i]), color)
 
 def load_graph(graph_file):
     """Loads a frozen inference graph"""
@@ -127,8 +128,10 @@ class TLClassifier(object):
                 box_coords = to_image_coords(boxes, height, width)
 
                 # Each class with be represented by a differently colored box
-                draw_boxes(draw_img, box_coords, classes)
+                draw_boxes(draw_img, box_coords, classes ,scores)
 
                 draw_img.save(OBJECT_DETECTED_IMAGE)
+
+                image = np.array(draw_img)
 
         return color
