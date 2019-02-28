@@ -12,6 +12,12 @@ SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
 TARGET_CLASS = 10  ## traffic light 
 OBJECT_DETECTED_IMAGE = 'obj_det.png'
 
+boundaries = [
+    ([0, 100, 80], [10, 255, 255]), # red
+    ([18, 0, 196], [36, 255, 255]), # yellow
+    ([36, 202, 59], [71, 255, 255]) # green
+]
+
 # Colors (one for each class)
 cmap = ImageColor.colormap
 print("Number of colors =", len(cmap))
@@ -130,8 +136,29 @@ class TLClassifier(object):
                 # Each class with be represented by a differently colored box
                 draw_boxes(draw_img, box_coords, classes ,scores)
 
-                draw_img.save(OBJECT_DETECTED_IMAGE)
+                # draw_img.save(OBJECT_DETECTED_IMAGE)
+
+                ryg = [0,0,0]
+                for i in range(len(box_coords)):
+                    bot, left, top, right = box_coords[i, ...]
+                    box_img = image[int(bot):int(top), int(left):int(right), :]
+
+                    hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
+                    mask = [0,0,0]
+                    for j, (lower, upper) in enumerate(boundaries):
+                        # create NumPy arrays from the boundaries
+                        lower = np.array(lower, dtype = "uint8")
+                        upper = np.array(upper, dtype = "uint8")
+
+                        # find the colors within the specified boundaries and apply
+                        # the mask
+                        mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
+
+                    ryg[mask.index(max(mask))] += 1 
+
+                color = ryg.index(max(ryg)) 
 
                 image = np.array(draw_img)
 
+        rospy.logwarn('detected color = %d', color)
         return color
