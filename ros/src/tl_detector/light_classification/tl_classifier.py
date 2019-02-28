@@ -160,5 +160,5 @@ class TLClassifier(object):
 
                 image = np.array(draw_img)
 
-        rospy.logwarn('detected color = %d', color)
+        rospy.logwarn('detected light = %d', color)
         return color
