@@ -15,7 +15,7 @@ from scipy.spatial import KDTree
 import time
 
 STATE_COUNT_THRESHOLD = 1
-TL_CLASSIFICATION_INTERVAL = 2
+TL_CLASSIFICATION_INTERVAL = 1
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
