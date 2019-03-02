@@ -1,5 +1,62 @@
+# **Programming a Real Self-Driving Car**
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
+[//]: # (Image References)
+
+[image1]: ./imgs/demo.gif "demo"
+[image2]: ./imgs/final-project-ros-graph-v2.png "final-project-ros-graph-v2"
+[image3]: ./imgs/tl-detector-ros-graph.png "tl-detector-ros-graph"
+[image4]: ./imgs/waypoint-updater-ros-graph.png "waypoint-updater-ros-graph"
+[image5]: ./imgs/dbw-node-ros-graph.png "dbw-node-ros-graph"
+[image6]: ./imgs/obj_det.png "obj_det"
+[image7]: ./imgs/waypoint.png "waypoint"
+
+![alt text][image1]
+
+---
+### Team Member
+
+| Name  | Udacity account email |
+|-------|-----------------------|
+|       |                       |
+|       |                       |
+| FC Su | dragon7.fc@gmail.com  |
+|       |                       |
+|       |                       |
+
+
+
+---
+### System Architecture Diagram
+
+![alt text][image2]
+
+### Code Structure
+
+* Traffic Light Detection Node
+
+    - (path_to_project_repo)/ros/src/tl_detector/
+
+    ![alt text][image3]
+
+    ![alt text][image6]
+
+* Waypoint Updater Node
+
+    - (path_to_project_repo)/ros/src/waypoint_updater/
+
+    ![alt text][image4]
+
+    ![alt text][image7]
+
+* DBW Node
+
+    - (path_to_project_repo)/ros/src/twist_controller/
+
+    ![alt text][image5]
+
+---
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
