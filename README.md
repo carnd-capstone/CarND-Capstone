@@ -38,7 +38,19 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
     - (path_to_project_repo)/ros/src/tl_detector/
 
-    ![alt text][image3]
+        This package contains the traffic light detection node: `tl_detector.py`. This node takes in data from the `/image_color`, `/current_pose`, and `/base_waypoints` topics and publishes the locations to stop for red traffic lights to the `/traffic_waypoint` topic.
+
+        The `/current_pose` topic provides the vehicle's current position, and `/base_waypoints` provides a complete list of waypoints the car will be following.
+
+        Traffic light detection should take place within `tl_detector.py`, whereas traffic light classification should take place within `../tl_detector/light_classification_model/tl_classfier.py`.
+
+        We applied Tensorflow to detect traffic light. The real-time object detection model we used is [SSD_Mobilenet 11.6.17 version](http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz).
+
+        After successfully detected traffic light, we converted RGB to HSV color space to identify red/green/yellow light.
+
+        ![alt text][image3]
+
+        ![MobileNets Graphic](https://github.com/tensorflow/models/raw/master/research/slim/nets/mobilenet_v1.png)
 
     ![alt text][image6]
 
@@ -46,7 +58,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
     - (path_to_project_repo)/ros/src/waypoint_updater/
 
-    ![alt text][image4]
+        This package contains the waypoint updater node: `waypoint_updater.py`. The purpose of this node is to update the target velocity property of each waypoint based on traffic light and obstacle detection data. This node will subscribe to the `/base_waypoints`, `/current_pose`, `/obstacle_waypoint`, and `/traffic_waypoint` topics, and publish a list of waypoints ahead of the car with target velocities to the `/final_waypoints` topic.
+
+        ![alt text][image4]
 
     ![alt text][image7]
 
@@ -54,7 +68,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
     - (path_to_project_repo)/ros/src/twist_controller/
 
-    ![alt text][image5]
+        Carla is equipped with a drive-by-wire (dbw) system, meaning the throttle, brake, and steering have electronic control. This package contains the files that are responsible for control of the vehicle: the node `dbw_node.py` and the file `twist_controller.py`, along with a pid and lowpass filter that you can use in your implementation. The `dbw_node` subscribes to the `/current_velocity` topic along with the `/twist_cmd` topic to receive target linear and angular velocities. Additionally, this node will subscribe to `/vehicle/dbw_enabled`, which indicates if the car is under dbw or driver control. This node will publish throttle, brake, and steering commands to the `/vehicle/throttle_cmd`, `/vehicle/brake_cmd`, and `/vehicle/steering_cmd` topics.
+
+        ![alt text][image5]
 
 ---
 Please use **one** of the two installation options, either native **or** docker installation.
@@ -88,6 +104,8 @@ Run the docker file
 ```bash
 docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
+__NOTE__: **The docker will run fail with camera enable**.
+
 
 ### Port Forwarding
 To set up port forwarding, please refer to the [instructions from term 2](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77)
