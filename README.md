@@ -59,6 +59,12 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
     - (path_to_project_repo)/ros/src/waypoint_updater/
 
         This package contains the waypoint updater node: `waypoint_updater.py`. The purpose of this node is to update the target velocity property of each waypoint based on traffic light and obstacle detection data. This node will subscribe to the `/base_waypoints`, `/current_pose`, `/obstacle_waypoint`, and `/traffic_waypoint` topics, and publish a list of waypoints ahead of the car with target velocities to the `/final_waypoints` topic.
+        The waypoint updater node serves the following functions:
+        * A KD-Tree algorithm was used to search for the nearest waypoint, and bring down the search time to O(logn). 
+        * A vector products function was used to help the vehicle detect if the nearest waypoint is behind the vehicle.
+        * A decelerate waypoint will be generated if a red traffic light is detected.
+        
+        The pure pursuit line-follow strategy was used after the waypoint gerneation. A DBW control node(details in next section) was used to help the vehicle keep tracking of the target waypoint. The steering angle is generated based on the position next target waypoint for each loop, using the vehicle kinematics and the trun curvature calculation.
 
         ![alt text][image4]
 
@@ -69,6 +75,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
     - (path_to_project_repo)/ros/src/twist_controller/
 
         Carla is equipped with a drive-by-wire (dbw) system, meaning the throttle, brake, and steering have electronic control. This package contains the files that are responsible for control of the vehicle: the node `dbw_node.py` and the file `twist_controller.py`, along with a pid and lowpass filter that you can use in your implementation. The `dbw_node` subscribes to the `/current_velocity` topic along with the `/twist_cmd` topic to receive target linear and angular velocities. Additionally, this node will subscribe to `/vehicle/dbw_enabled`, which indicates if the car is under dbw or driver control. This node will publish throttle, brake, and steering commands to the `/vehicle/throttle_cmd`, `/vehicle/brake_cmd`, and `/vehicle/steering_cmd` topics.
+        A brake of 400Nm is applied to make the vehicle hold staionary and it will dynamically change with the vehicle current speed and vehicle mass(v/s^2 * kg = N*m) during a deceleration situation. 
 
         ![alt text][image5]
 
