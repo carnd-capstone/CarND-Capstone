@@ -111,11 +111,9 @@ Run the docker file
 ```bash
 docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
-__NOTE__: **The docker will run fail with camera enable**.
-
 
 ### Port Forwarding
-To set up port forwarding, please refer to the [instructions from term 2](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77)
+To set up port forwarding, please refer to the [instructions](Port+Forwarding.pdf)
 
 ### Usage
 
@@ -138,6 +136,10 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
+__NOTE__: Below are some requirements to run `catkin_make` successfully in Project Workspace.
+ * sudo apt-get install -y ros-kinetic-dbw-mkz-msgs
+ * pip install --upgrade catkin_pkg_modules
+
 ### Real world testing
 1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
@@ -151,6 +153,48 @@ rosbag play -l traffic_light_bag_file/traffic_light_training.bag
 4. Launch your project in site mode
 ```bash
 cd CarND-Capstone/ros
+source devel/setup.sh
 roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
+
+__NOTE__: Docker Instruction
+1. rosbag
+
+    * __LINUX__:
+
+        ```bash
+        docker run --rm --name capstone \
+            --net=host -e DISPLAY=$DISPLAY \
+            -v $HOME/.Xauthority:/root/.Xauthority \
+            -v $PWD:/capstone -v /tmp/log:/root/.ros/ \
+            -v traffic_light_bag_file:/bag \
+            -p 4567:4567 \
+            -it capstone
+        ```
+
+    * __MAC__:
+
+        ```bash
+        socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
+        
+        docker run --rm --name capstone \
+            -e DISPLAY=[IP_ADDRESS]:0 \
+            -v $PWD:/capstone -v /tmp/log:/root/.ros/ \
+            -v traffic_light_bag_file:/bag \
+            -p 4567:4567 \
+            -it capstone
+        ```
+
+    ```bash
+    rosbag play -l /bag/traffic_light_training.bag
+    ```
+
+1. roslaunch
+
+    ```bash
+    docker exec -it capstone bash
+
+    source devel/setup.sh
+    roslaunch launch/site.launch
+    ```
