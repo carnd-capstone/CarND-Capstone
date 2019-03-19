@@ -96,6 +96,9 @@ class TLClassifier(object):
         # The classification of the object (integer id).
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
+        with tf.Session(graph=self.detection_graph) as sess:
+            self.session = sess
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -108,57 +111,53 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         color = TrafficLight.UNKNOWN
-
+        
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        draw_img = Image.fromarray(image)
+        # draw_img = Image.fromarray(image)
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
+              
+        # Actual detection.
+        (boxes, scores, classes) = self.session.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
+                                            feed_dict={self.image_tensor: image_np})
 
-        with tf.Session(graph=self.detection_graph) as sess:                
-            # Actual detection.
-            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
-                                                feed_dict={self.image_tensor: image_np})
+        # Remove unnecessary dimensions
+        boxes = np.squeeze(boxes)
+        scores = np.squeeze(scores)
+        classes = np.squeeze(classes)
 
-            # Remove unnecessary dimensions
-            boxes = np.squeeze(boxes)
-            scores = np.squeeze(scores)
-            classes = np.squeeze(classes)
+        confidence_cutoff = 0.2
+        # Filter boxes with a confidence score less than `confidence_cutoff`
+        boxes, scores, classes = filter_boxes(confidence_cutoff, TARGET_CLASS, boxes, scores, classes)
 
-            confidence_cutoff = 0.2
-            # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = filter_boxes(confidence_cutoff, TARGET_CLASS, boxes, scores, classes)
+        if len(boxes) > 0:
+            # The current box coordinates are normalized to a range between 0 and 1.
+            # This converts the coordinates actual location on the image.
+            width, height = image.shape[-2::-1]
+            box_coords = to_image_coords(boxes, height, width)
 
-            if len(boxes) > 0:
-                # The current box coordinates are normalized to a range between 0 and 1.
-                # This converts the coordinates actual location on the image.
-                width, height = draw_img.size
-                box_coords = to_image_coords(boxes, height, width)
+            # Each class with be represented by a differently colored box
+            # draw_boxes(draw_img, box_coords, classes ,scores)
+            # draw_img.save(OBJECT_DETECTED_IMAGE)
 
-                # Each class with be represented by a differently colored box
-                draw_boxes(draw_img, box_coords, classes ,scores)
+            ryg = [0,0,0]
+            for i in range(len(box_coords)):
+                bot, left, top, right = box_coords[i, ...]
+                box_img = image[int(bot):int(top), int(left):int(right), :]
 
-                # draw_img.save(OBJECT_DETECTED_IMAGE)
+                hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
+                mask = [0,0,0]
+                for j, (lower, upper) in enumerate(boundaries):
+                    # create NumPy arrays from the boundaries
+                    lower = np.array(lower, dtype = "uint8")
+                    upper = np.array(upper, dtype = "uint8")
 
-                ryg = [0,0,0]
-                for i in range(len(box_coords)):
-                    bot, left, top, right = box_coords[i, ...]
-                    box_img = image[int(bot):int(top), int(left):int(right), :]
+                    # find the colors within the specified boundaries and apply
+                    # the mask
+                    mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
 
-                    hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
-                    mask = [0,0,0]
-                    for j, (lower, upper) in enumerate(boundaries):
-                        # create NumPy arrays from the boundaries
-                        lower = np.array(lower, dtype = "uint8")
-                        upper = np.array(upper, dtype = "uint8")
+                ryg[mask.index(max(mask))] += 1 
 
-                        # find the colors within the specified boundaries and apply
-                        # the mask
-                        mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
-
-                    ryg[mask.index(max(mask))] += 1 
-
-                color = ryg.index(max(ryg)) 
-
-                image = np.array(draw_img)
+            color = ryg.index(max(ryg))
 
         rospy.logwarn('detected light = %d', color)
         return color
