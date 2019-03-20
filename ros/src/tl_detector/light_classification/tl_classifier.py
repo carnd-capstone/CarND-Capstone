@@ -7,10 +7,12 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageColor
+from datetime import datetime
 
 SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
-TARGET_CLASS = 10  ## traffic light 
-OBJECT_DETECTED_IMAGE = 'obj_det.png'
+TARGET_CLASS = 10  ## traffic light
+
+IS_OUTPUT_IMAGE = True
 
 boundaries = [
     ([0, 100, 80], [10, 255, 255]), # red
@@ -18,10 +20,7 @@ boundaries = [
     ([36, 202, 59], [71, 255, 255]) # green
 ]
 
-# Colors (one for each class)
-cmap = ImageColor.colormap
-print("Number of colors =", len(cmap))
-COLOR_LIST = sorted([c for c in cmap.keys()])
+COLOR_LIST = ['red', 'yellow', 'green']
 
 #
 # Utility funcs
@@ -55,13 +54,14 @@ def to_image_coords(boxes, height, width):
 
     return box_coords
 
-def draw_boxes(image, boxes, classes, scores, thickness=4):
+def draw_boxes(image, boxes, classes, scores, color_id, thickness=4):
     """Draw bounding boxes on the image"""
     draw = ImageDraw.Draw(image)
     for i in range(len(boxes)):
         bot, left, top, right = boxes[i, ...]
         class_id = int(classes[i])
-        color = COLOR_LIST[class_id]
+        color = COLOR_LIST[color_id]
+        
         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
         draw.text((left, bot-15), str(scores[i]), color)
 
@@ -113,7 +113,6 @@ class TLClassifier(object):
         color = TrafficLight.UNKNOWN
         
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        # draw_img = Image.fromarray(image)
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
               
         # Actual detection.
@@ -135,10 +134,6 @@ class TLClassifier(object):
             width, height = image.shape[-2::-1]
             box_coords = to_image_coords(boxes, height, width)
 
-            # Each class with be represented by a differently colored box
-            # draw_boxes(draw_img, box_coords, classes ,scores)
-            # draw_img.save(OBJECT_DETECTED_IMAGE)
-
             ryg = [0,0,0]
             for i in range(len(box_coords)):
                 bot, left, top, right = box_coords[i, ...]
@@ -158,6 +153,13 @@ class TLClassifier(object):
                 ryg[mask.index(max(mask))] += 1 
 
             color = ryg.index(max(ryg))
+
+            if IS_OUTPUT_IMAGE:
+                image_file = 'image/' + str(datetime.now()) + '.png'
+                # Each class with be represented by a differently colored box
+                draw_img = Image.fromarray(image)
+                draw_boxes(draw_img, box_coords, classes ,scores, color)
+                draw_img.save(image_file)
 
         rospy.logwarn('detected light = %d', color)
         return color
