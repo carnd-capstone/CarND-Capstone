@@ -12,7 +12,7 @@ from datetime import datetime
 SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
 TARGET_CLASS = 10  ## traffic light
 
-IS_OUTPUT_IMAGE = True
+IS_OUTPUT_IMAGE = False
 
 boundaries = [
     ([0, 100, 80], [10, 255, 255]), # red
@@ -63,7 +63,8 @@ def draw_boxes(image, boxes, classes, scores, color_id, thickness=4):
         color = COLOR_LIST[color_id]
         
         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
-        draw.text((left, bot-15), str(scores[i]), color)
+        draw.rectangle([(left, bot-20), (right, bot)], outline=color, fill=color)
+        draw.text((left, bot-15), str(scores[i]), 'black')
 
 def load_graph(graph_file):
     """Loads a frozen inference graph"""
@@ -155,7 +156,7 @@ class TLClassifier(object):
             color = ryg.index(max(ryg))
 
             if IS_OUTPUT_IMAGE:
-                image_file = 'image/' + str(datetime.now()) + '.png'
+                image_file = '../../../imgs/' + str(datetime.now()) + '.png'
                 # Each class with be represented by a differently colored box
                 draw_img = Image.fromarray(image)
                 draw_boxes(draw_img, box_coords, classes ,scores, color)
