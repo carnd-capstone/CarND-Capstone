@@ -142,14 +142,30 @@ class TLClassifier(object):
 
                 hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
                 mask = [0,0,0]
-                for j, (lower, upper) in enumerate(boundaries):
-                    # create NumPy arrays from the boundaries
-                    lower = np.array(lower, dtype = "uint8")
-                    upper = np.array(upper, dtype = "uint8")
+                box_height = hsv.shape[0]
+                box_width = hsv.shape[1]
+                if box_height < box_width:  ## simulation mode
+                    for j, (lower, upper) in enumerate(boundaries):
+                        # create NumPy arrays from the boundaries
+                        lower = np.array(lower, dtype = "uint8")
+                        upper = np.array(upper, dtype = "uint8")
 
-                    # find the colors within the specified boundaries and apply
-                    # the mask
-                    mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
+                        # find the colors within the specified boundaries and apply
+                        # the mask
+                        mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
+                else:  ## real life mode
+                    v = hsv[:,:,2]
+
+                    top_v = np.sum(v[:box_height/3,:])
+                    middle_v = np.sum(v[box_height/3:box_height*2/3,:])
+                    bottom_v = np.sum(v[box_height*2/3:,:])
+                    max_v = max(top_v,middle_v,bottom_v)
+ 
+                    if max_v != 0:
+                        for idx, item in enumerate([top_v, middle_v, bottom_v]):
+                            if item / max_v == 1:
+                                mask[idx] = 1
+                                break
 
                 ryg[mask.index(max(mask))] += 1 
 

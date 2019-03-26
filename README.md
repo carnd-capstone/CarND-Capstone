@@ -11,6 +11,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 [image5]: ./imgs/dbw-node-ros-graph.png "dbw-node-ros-graph"
 [image6]: ./imgs/obj_det.png "obj_det"
 [image7]: ./imgs/waypoint.png "waypoint"
+[image8]: ./imgs/red.png "red"
+[image9]: ./imgs/yellow.png "yellow"
+[image10]: ./imgs/green.png "green"
 
 ![alt text][image1]
 
@@ -53,6 +56,12 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
         ![MobileNets Graphic](https://github.com/tensorflow/models/raw/master/research/slim/nets/mobilenet_v1.png)
 
     ![alt text][image6]
+
+    ![alt text][image8]
+
+    ![alt text][image9]
+
+    ![alt text][image10]
 
 * Waypoint Updater Node
 
