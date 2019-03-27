@@ -14,6 +14,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 [image8]: ./imgs/red.png "red"
 [image9]: ./imgs/yellow.png "yellow"
 [image10]: ./imgs/green.png "green"
+[image11]: ./imgs/red2.png "red2"
 
 ![alt text][image1]
 
@@ -62,6 +63,8 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
     ![alt text][image9]
 
     ![alt text][image10]
+
+    ![alt text][image11]
 
 * Waypoint Updater Node
 

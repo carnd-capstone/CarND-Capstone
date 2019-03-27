@@ -140,6 +140,8 @@ class TLClassifier(object):
                 bot, left, top, right = box_coords[i, ...]
                 box_img = image[int(bot):int(top), int(left):int(right), :]
 
+                box_img = cv2.GaussianBlur(box_img, (3, 3), 0)
+
                 hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
                 mask = [0,0,0]
                 box_height = hsv.shape[0]
@@ -156,9 +158,9 @@ class TLClassifier(object):
                 else:  ## real life mode
                     v = hsv[:,:,2]
 
-                    top_v = np.sum(v[:box_height/3,:])
-                    middle_v = np.sum(v[box_height/3:box_height*2/3,:])
-                    bottom_v = np.sum(v[box_height*2/3:,:])
+                    top_v = np.sum(v[:int(box_height/3),:])
+                    middle_v = np.sum(v[int(box_height/3):int(box_height*2/3),:])
+                    bottom_v = np.sum(v[int(box_height*2/3):,:])
                     max_v = max(top_v,middle_v,bottom_v)
  
                     if max_v != 0:
@@ -166,6 +168,8 @@ class TLClassifier(object):
                             if item / max_v == 1:
                                 mask[idx] = 1
                                 break
+                    else:
+                        mask = [1, 0, 0]  # default red
 
                 ryg[mask.index(max(mask))] += 1 
 
