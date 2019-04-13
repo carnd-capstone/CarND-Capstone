@@ -11,6 +11,10 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 [image5]: ./imgs/dbw-node-ros-graph.png "dbw-node-ros-graph"
 [image6]: ./imgs/obj_det.png "obj_det"
 [image7]: ./imgs/waypoint.png "waypoint"
+[image8]: ./imgs/red.png "red"
+[image9]: ./imgs/yellow.png "yellow"
+[image10]: ./imgs/green.png "green"
+[image11]: ./imgs/red2.png "red2"
 
 ![alt text][image1]
 
@@ -38,15 +42,43 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
     - (path_to_project_repo)/ros/src/tl_detector/
 
-    ![alt text][image3]
+        This package contains the traffic light detection node: `tl_detector.py`. This node takes in data from the `/image_color`, `/current_pose`, and `/base_waypoints` topics and publishes the locations to stop for red traffic lights to the `/traffic_waypoint` topic.
+
+        The `/current_pose` topic provides the vehicle's current position, and `/base_waypoints` provides a complete list of waypoints the car will be following.
+
+        Traffic light detection should take place within `tl_detector.py`, whereas traffic light classification should take place within `../tl_detector/light_classification_model/tl_classfier.py`.
+
+        We applied Tensorflow to detect traffic light. The real-time object detection model we used is [SSD_Mobilenet 11.6.17 version](http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz).
+
+        After successfully detected traffic light, we converted RGB to HSV color space to identify red/green/yellow light.
+
+        ![alt text][image3]
+
+        ![MobileNets Graphic](https://github.com/tensorflow/models/raw/master/research/slim/nets/mobilenet_v1.png)
 
     ![alt text][image6]
+
+    ![alt text][image8]
+
+    ![alt text][image9]
+
+    ![alt text][image10]
+
+    ![alt text][image11]
 
 * Waypoint Updater Node
 
     - (path_to_project_repo)/ros/src/waypoint_updater/
 
-    ![alt text][image4]
+        This package contains the waypoint updater node: `waypoint_updater.py`. The purpose of this node is to update the target velocity property of each waypoint based on traffic light and obstacle detection data. This node will subscribe to the `/base_waypoints`, `/current_pose`, `/obstacle_waypoint`, and `/traffic_waypoint` topics, and publish a list of waypoints ahead of the car with target velocities to the `/final_waypoints` topic.
+        The waypoint updater node serves the following functions:
+        * A KD-Tree algorithm was used to search for the nearest waypoint, and bring down the search time to O(logn). 
+        * A vector products function was used to help the vehicle detect if the nearest waypoint is behind the vehicle.
+        * A decelerate waypoint will be generated if a red traffic light is detected.
+        
+        The pure pursuit line-follow strategy was used after the waypoint gerneation. A DBW control node(details in next section) was used to help the vehicle keep tracking of the target waypoint. The steering angle is generated based on the position next target waypoint for each loop, using the vehicle kinematics and the trun curvature calculation.
+
+        ![alt text][image4]
 
     ![alt text][image7]
 
@@ -54,7 +86,10 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
     - (path_to_project_repo)/ros/src/twist_controller/
 
-    ![alt text][image5]
+        Carla is equipped with a drive-by-wire (dbw) system, meaning the throttle, brake, and steering have electronic control. This package contains the files that are responsible for control of the vehicle: the node `dbw_node.py` and the file `twist_controller.py`, along with a pid and lowpass filter that you can use in your implementation. The `dbw_node` subscribes to the `/current_velocity` topic along with the `/twist_cmd` topic to receive target linear and angular velocities. Additionally, this node will subscribe to `/vehicle/dbw_enabled`, which indicates if the car is under dbw or driver control. This node will publish throttle, brake, and steering commands to the `/vehicle/throttle_cmd`, `/vehicle/brake_cmd`, and `/vehicle/steering_cmd` topics.
+        A brake of 400Nm is applied to make the vehicle hold staionary and it will dynamically change with the vehicle current speed and vehicle mass(v/s^2 * kg = N*m) during a deceleration situation. 
+
+        ![alt text][image5]
 
 ---
 Please use **one** of the two installation options, either native **or** docker installation.
@@ -90,7 +125,7 @@ docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capst
 ```
 
 ### Port Forwarding
-To set up port forwarding, please refer to the [instructions from term 2](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77)
+To set up port forwarding, please refer to the [instructions](Port+Forwarding.pdf)
 
 ### Usage
 
@@ -113,6 +148,10 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
+__NOTE__: Below are some requirements to run `catkin_make` successfully in Project Workspace.
+ * sudo apt-get install -y ros-kinetic-dbw-mkz-msgs
+ * pip install --upgrade catkin_pkg_modules
+
 ### Real world testing
 1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
@@ -126,6 +165,48 @@ rosbag play -l traffic_light_bag_file/traffic_light_training.bag
 4. Launch your project in site mode
 ```bash
 cd CarND-Capstone/ros
+source devel/setup.sh
 roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
+
+__NOTE__: Docker Instruction
+1. rosbag
+
+    * __LINUX__:
+
+        ```bash
+        docker run --rm --name capstone \
+            --net=host -e DISPLAY=$DISPLAY \
+            -v $HOME/.Xauthority:/root/.Xauthority \
+            -v $PWD:/capstone -v /tmp/log:/root/.ros/ \
+            -v traffic_light_bag_file:/bag \
+            -p 4567:4567 \
+            -it capstone
+        ```
+
+    * __MAC__:
+
+        ```bash
+        socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
+        
+        docker run --rm --name capstone \
+            -e DISPLAY=[IP_ADDRESS]:0 \
+            -v $PWD:/capstone -v /tmp/log:/root/.ros/ \
+            -v traffic_light_bag_file:/bag \
+            -p 4567:4567 \
+            -it capstone
+        ```
+
+    ```bash
+    rosbag play -l /bag/traffic_light_training.bag
+    ```
+
+1. roslaunch
+
+    ```bash
+    docker exec -it capstone bash
+
+    source devel/setup.sh
+    roslaunch launch/site.launch
+    ```

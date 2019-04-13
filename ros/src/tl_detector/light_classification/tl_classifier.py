@@ -7,10 +7,12 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageColor
+from datetime import datetime
 
 SSD_GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
-TARGET_CLASS = 10  ## traffic light 
-OBJECT_DETECTED_IMAGE = 'obj_det.png'
+TARGET_CLASS = 10  ## traffic light
+
+IS_OUTPUT_IMAGE = False
 
 boundaries = [
     ([0, 100, 80], [10, 255, 255]), # red
@@ -18,10 +20,7 @@ boundaries = [
     ([36, 202, 59], [71, 255, 255]) # green
 ]
 
-# Colors (one for each class)
-cmap = ImageColor.colormap
-print("Number of colors =", len(cmap))
-COLOR_LIST = sorted([c for c in cmap.keys()])
+COLOR_LIST = ['red', 'yellow', 'green']
 
 #
 # Utility funcs
@@ -55,15 +54,17 @@ def to_image_coords(boxes, height, width):
 
     return box_coords
 
-def draw_boxes(image, boxes, classes, scores, thickness=4):
+def draw_boxes(image, boxes, classes, scores, color_id, thickness=4):
     """Draw bounding boxes on the image"""
     draw = ImageDraw.Draw(image)
     for i in range(len(boxes)):
         bot, left, top, right = boxes[i, ...]
         class_id = int(classes[i])
-        color = COLOR_LIST[class_id]
+        color = COLOR_LIST[color_id]
+        
         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
-        draw.text((left, bot-15), str(scores[i]), color)
+        draw.rectangle([(left, bot-20), (right, bot)], outline=color, fill=color)
+        draw.text((left, bot-15), str(scores[i]), 'black')
 
 def load_graph(graph_file):
     """Loads a frozen inference graph"""
@@ -96,6 +97,9 @@ class TLClassifier(object):
         # The classification of the object (integer id).
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
+        with tf.Session(graph=self.detection_graph) as sess:
+            self.session = sess
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -108,43 +112,41 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         color = TrafficLight.UNKNOWN
-
+        
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        draw_img = Image.fromarray(image)
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
+              
+        # Actual detection.
+        (boxes, scores, classes) = self.session.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
+                                            feed_dict={self.image_tensor: image_np})
 
-        with tf.Session(graph=self.detection_graph) as sess:                
-            # Actual detection.
-            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
-                                                feed_dict={self.image_tensor: image_np})
+        # Remove unnecessary dimensions
+        boxes = np.squeeze(boxes)
+        scores = np.squeeze(scores)
+        classes = np.squeeze(classes)
 
-            # Remove unnecessary dimensions
-            boxes = np.squeeze(boxes)
-            scores = np.squeeze(scores)
-            classes = np.squeeze(classes)
+        confidence_cutoff = 0.2
+        # Filter boxes with a confidence score less than `confidence_cutoff`
+        boxes, scores, classes = filter_boxes(confidence_cutoff, TARGET_CLASS, boxes, scores, classes)
 
-            confidence_cutoff = 0.2
-            # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = filter_boxes(confidence_cutoff, TARGET_CLASS, boxes, scores, classes)
+        if len(boxes) > 0:
+            # The current box coordinates are normalized to a range between 0 and 1.
+            # This converts the coordinates actual location on the image.
+            width, height = image.shape[-2::-1]
+            box_coords = to_image_coords(boxes, height, width)
 
-            if len(boxes) > 0:
-                # The current box coordinates are normalized to a range between 0 and 1.
-                # This converts the coordinates actual location on the image.
-                width, height = draw_img.size
-                box_coords = to_image_coords(boxes, height, width)
+            ryg = [0,0,0]
+            for i in range(len(box_coords)):
+                bot, left, top, right = box_coords[i, ...]
+                box_img = image[int(bot):int(top), int(left):int(right), :]
 
-                # Each class with be represented by a differently colored box
-                draw_boxes(draw_img, box_coords, classes ,scores)
+                box_img = cv2.GaussianBlur(box_img, (3, 3), 0)
 
-                # draw_img.save(OBJECT_DETECTED_IMAGE)
-
-                ryg = [0,0,0]
-                for i in range(len(box_coords)):
-                    bot, left, top, right = box_coords[i, ...]
-                    box_img = image[int(bot):int(top), int(left):int(right), :]
-
-                    hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
-                    mask = [0,0,0]
+                hsv = cv2.cvtColor(box_img, cv2.COLOR_RGB2HSV)
+                mask = [0,0,0]
+                box_height = hsv.shape[0]
+                box_width = hsv.shape[1]
+                if box_height < box_width:  ## simulation mode
                     for j, (lower, upper) in enumerate(boundaries):
                         # create NumPy arrays from the boundaries
                         lower = np.array(lower, dtype = "uint8")
@@ -153,12 +155,32 @@ class TLClassifier(object):
                         # find the colors within the specified boundaries and apply
                         # the mask
                         mask[j] = sum(np.hstack(cv2.inRange(hsv, lower, upper)))
+                else:  ## real life mode
+                    v = hsv[:,:,2]
 
-                    ryg[mask.index(max(mask))] += 1 
+                    top_v = np.sum(v[:int(box_height/3),:])
+                    middle_v = np.sum(v[int(box_height/3):int(box_height*2/3),:])
+                    bottom_v = np.sum(v[int(box_height*2/3):,:])
+                    max_v = max(top_v,middle_v,bottom_v)
+ 
+                    if max_v != 0:
+                        for idx, item in enumerate([top_v, middle_v, bottom_v]):
+                            if item / max_v == 1:
+                                mask[idx] = 1
+                                break
+                    else:
+                        mask = [1, 0, 0]  # default red
 
-                color = ryg.index(max(ryg)) 
+                ryg[mask.index(max(mask))] += 1 
 
-                image = np.array(draw_img)
+            color = ryg.index(max(ryg))
+
+            if IS_OUTPUT_IMAGE:
+                image_file = '../../../imgs/' + str(datetime.now()) + '.png'
+                # Each class with be represented by a differently colored box
+                draw_img = Image.fromarray(image)
+                draw_boxes(draw_img, box_coords, classes ,scores, color)
+                draw_img.save(image_file)
 
         rospy.logwarn('detected light = %d', color)
         return color

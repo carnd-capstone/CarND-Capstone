@@ -12,10 +12,10 @@ import cv2
 import yaml
 
 from scipy.spatial import KDTree
-import time
+import datetime
 
 STATE_COUNT_THRESHOLD = 1
-TL_CLASSIFICATION_INTERVAL = 1
+TL_CLASSIFICATION_INTERVAL = 200*1000  # 200 minisecond
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
@@ -52,7 +52,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.last_detection = time.time()
+        self.last_detection = datetime.datetime.now()
 
         self.light_classifier = TLClassifier()
 
@@ -78,13 +78,14 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        start_detection = time.time()
-        if start_detection - self.last_detection < TL_CLASSIFICATION_INTERVAL:
-            # rospy.logwarn("Skipping frame ...")p
+        start_detection = datetime.datetime.now()
+        delta_time = start_detection - self.last_detection
+        if delta_time.microseconds < TL_CLASSIFICATION_INTERVAL:
+            # rospy.logwarn("Skipping frame ...")
             return
 
         self.has_image = True
-        self.camera_image = msg  
+        self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
 
         '''
@@ -104,7 +105,7 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-        self.last_detection = time.time()
+        self.last_detection = datetime.datetime.now()
 
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
