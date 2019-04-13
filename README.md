@@ -27,7 +27,8 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 |       |                       |
 | FC Su | dragon7.fc@gmail.com  |
 | Zhong | 546764887@qq.com      |
-|Fujing Xie|emiliexiaoxiexie@hotmail.com                       |
+|Fujing Xie|emiliexiaoxiexie@hotmail.com  |
+|Chengnan Hu|twinsnan@foxmail.com |
 
 
 
